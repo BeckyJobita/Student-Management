@@ -31,11 +31,11 @@ def admin_only(view_func):
             group = request.user.groups.all()[0].name
 
         if group == 'student':
-            return redirect('user')
+            return redirect('user-page')
 
         elif group == 'admin':
             return view_func(request, *args, **kwargs)
         else:
-            return redirect('login')
+            return redirect('login')    
 
     return wrapper_function
