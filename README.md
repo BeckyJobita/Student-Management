@@ -1,7 +1,3 @@
-    Sure, here's a template for a README file for your Django app:
-
----
-
 # Student Management System
 
 The Student Management System is a Django web application designed to manage student records, including registration information, courses, and grades. It provides a user-friendly interface for administrators to view, add, edit, and delete student data.
