@@ -2,16 +2,13 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib.auth.forms import UserCreationForm
-
 from django.contrib.auth import authenticate, login, logout
-
 from django.contrib import messages
-
 from django.contrib.auth.decorators import login_required
-
 from .models import Student
 from .forms import StudentForm, CreateUserForm
 from .decorators import unauthenticated_user, allowed_users, admin_only
+from django.http import HttpResponseServerError
 
 # Create your views here.
 @unauthenticated_user
@@ -28,28 +25,42 @@ def registerPage(request):
     context = {'form': form}
     return render(request, 'students/register.html', context)
 
+# from django.shortcuts import redirect
+
 @unauthenticated_user
 def loginPage(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
-
         user = authenticate(request, username=username, password=password)
-
         if user is not None:
             login(request, user)
-            return redirect('index', 'user-page')
+            # Redirect based on user's role
+            if user.groups.filter(name='admin').exists():
+                return redirect('index')
+            else:
+                return redirect('user-page')
+        else:
+            messages.info(request, 'Username or password is incorrect')
+    context = {}
+    return render(request, 'students/login.html', context)
 
-        context = {}
-        return render(request, 'students/login.html', context)
 
 def logoutUser(request):
     logout(request)
     return redirect('login')
 
+
+@login_required(login_url='login')
 def userPage(request):
-    context = {}
-    return render(request, 'students/user.html')
+    try:
+        user = request.user
+        student = get_object_or_404(Student, user=user)
+        return render(request, 'students/user.html', {'student': student})
+    except Student.DoesNotExist:
+        return HttpResponseServerError("Student does not exist for the current user")
+
+   
 
 @login_required(login_url='login')
 @admin_only
@@ -59,9 +70,15 @@ def index(request):
     })
 
 @login_required(login_url='login')
-def view_student(request, id):
-    return HttpResponseRedirect(reverse('user-page'))
-
+def view_student(request):
+    try:
+        user = request.user
+        student = get_object_or_404(Student, user=user)
+        print("hooo")
+        return render(request, 'students/user.html', {'student': student})
+    except Exception as e:
+        return HttpResponseServerError(f"An error occurred: {e}")   
+         
 @login_required(login_url='login')
 def add(request):
   if request.method == 'POST':
